@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заказ 3D-печати</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 22px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            margin-top: 16px;
+        }
+        input[type="file"], select, input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: #fafafa;
+        }
+        input[type="file"] {
+            padding: 8px;
+            background-color: white;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            background-color: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 24px;
+            cursor: pointer;
+        }
+        button:active {
+            background-color: #005bb5;
+        }
+        /* Поле для своего цвета (скрыто по умолчанию) */
+        #customColorWrapper {
+            display: none;
+            margin-top: 8px;
+        }
+        /* Стили всплывающего окна (модального) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background-color: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal h2 {
+            margin-top: 0;
+            font-size: 20px;
+            text-align: center;
+            color: #2e7d32;
+        }
+        .modal-icon {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        .modal-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 15px;
+        }
+        .modal-row:last-of-type {
+            border-bottom: none;
+        }
+        .modal-row span:first-child {
+            color: #666;
+        }
+        .modal-row span:last-child {
+            font-weight: 600;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-word;
+        }
+        .modal button {
+            margin-top: 16px;
+            background-color: #007AFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Заказать 3D-печать</h1>
+        <p id="greeting" style="text-align:center; color:#666; font-size:14px;"></p>
+
+        <form id="orderForm">
+            <label for="modelFile">Файл 3D-модели (.stl, .obj) *</label>
+            <input type="file" id="modelFile" accept=".stl,.obj,.3mf" required>
+
+            <label for="photoFiles">Фотографии (необязательно)</label>
+            <input type="file" id="photoFiles" accept="image/*" multiple>
+            <small style="color:#888; font-size:12px;">Можно выбрать несколько фото</small>
+
+            <label for="material">Материал</label>
+            <select id="material">
+                <option value="PLA">PLA (жесткий, экологичный)</option>
+                <option value="PETG">PETG (жесткий, универсальный)</option>
+                <option value="TPU">TPU (гибкий, резиноподобный)</option>
+                <option value="Любой">Любой (на ваше усмотрение)</option>
+            </select>
+
+            <label for="color">Цвет</label>
+            <select id="color">
+                <option value="Черный">Черный</option>
+                <option value="Белый">Белый</option>
+                <option value="Серый">Серый</option>
+                <option value="Красный">Красный</option>
+                <option value="Синий">Синий</option>
+                <option value="Зеленый">Зеленый</option>
+                <option value="custom">— Свой цвет —</option>
+            </select>
+            <!-- Поле для ввода своего цвета (появляется при выборе "Свой цвет") -->
+            <div id="customColorWrapper">
+                <input type="text" id="customColor" placeholder="Напишите название или оттенок">
+            </div>
+
+            <label for="quantity">Количество (шт.)</label>
+            <input type="number" id="quantity" value="1" min="1" max="100">
+
+            <label for="comment">Комментарий (необязательно)</label>
+            <input type="text" id="comment" placeholder="Например: нужна поддержка">
+
+            <button type="submit">Отправить заказ</button>
+        </form>
+    </div>
+
+    <!-- Всплывающее окно с параметрами заявки -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-icon">✅</div>
+            <h2>Заявка принята!</h2>
+            <div class="modal-row"><span>Материал</span><span id="mMaterial">—</span></div>
+            <div class="modal-row"><span>Цвет</span><span id="mColor">—</span></div>
+            <div class="modal-row"><span>Количество</span><span id="mQuantity">—</span></div>
+            <div class="modal-row"><span>Фото</span><span id="mPhotos">—</span></div>
+            <div class="modal-row"><span>Комментарий</span><span id="mComment">—</span></div>
+            <button type="button" id="closeModal">Понятно</button>
+        </div>
+    </div>
+
+    <!-- Подключаем MAX Bridge -->
+    <script src="https://st.max.ru/js/max-web-app.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Приветствие внутри MAX
+            if (window.WebApp && window.WebApp.initDataUnsafe) {
+                const user = window.WebApp.initDataUnsafe.user;
+                if (user) {
+                    document.getElementById('greeting').textContent = 
+                        'Здравствуйте, ' + user.first_name + '!';
+                }
+                window.WebApp.ready();
+            } else {
+                document.getElementById('greeting').textContent = 
+                    'Демонстрационный режим (вне MAX)';
+            }
+
+            const colorSelect = document.getElementById('color');
+            const customColorWrapper = document.getElementById('customColorWrapper');
+            const customColorInput = document.getElementById('customColor');
+            const modalOverlay = document.getElementById('modalOverlay');
+
+            // Показываем поле для своего цвета при выборе "— Свой цвет —"
+            colorSelect.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    customColorWrapper.style.display = 'block';
+                    customColorInput.focus();
+                } else {
+                    customColorWrapper.style.display = 'none';
+                    customColorInput.value = '';
+                }
+            });
+
+            // Закрытие всплывающего окна
+            document.getElementById('closeModal').addEventListener('click', function() {
+                modalOverlay.classList.remove('active');
+            });
+            modalOverlay.addEventListener('click', function(e) {
+                if (e.target === modalOverlay) {
+                    modalOverlay.classList.remove('active');
+                }
+            });
+
+            // Обработка отправки формы
+            document.getElementById('orderForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const fileInput = document.getElementById('modelFile');
+                const photoInput = document.getElementById('photoFiles');
+
+                // Проверка наличия 3D-модели
+                if (!fileInput.files[0]) {
+                    alert('Пожалуйста, выберите файл 3D-модели.');
+                    return;
+                }
+
+                // Определяем итоговый цвет
+                let finalColor = colorSelect.value;
+                if (finalColor === 'custom') {
+                    finalColor = customColorInput.value.trim();
+                    if (!finalColor) {
+                        alert('Пожалуйста, напишите свой цвет.');
+                        customColorInput.focus();
+                        return;
+                    }
+                }
+
+                // Собираем остальные данные
+                const material = document.getElementById('material').value;
+                const quantity = document.getElementById('quantity').value;
+                const comment = document.getElementById('comment').value.trim() || '—';
+                const photoCount = photoInput.files.length;
+
+                // Заполняем всплывающее окно
+                document.getElementById('mMaterial').textContent = material;
+                document.getElementById('mColor').textContent = finalColor;
+                document.getElementById('mQuantity').textContent = quantity + ' шт.';
+                document.getElementById('mPhotos').textContent = 
+                    photoCount > 0 ? (photoCount + ' шт.') : 'нет';
+                document.getElementById('mComment').textContent = comment;
+
+                // Показываем окно
+                modalOverlay.classList.add('active');
+
+                // Очищаем форму
+                this.reset();
+                document.getElementById('quantity').value = '1';
+                customColorWrapper.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
