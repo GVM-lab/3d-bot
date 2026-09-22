@@ -9,12 +9,14 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 # --- КОНФИГУРАЦИЯ ---
-# Токен берём ТОЛЬКО из переменных окружения (никаких значений в коде!)
 BOT_TOKEN = os.getenv("MAX_BOT_TOKEN")
 ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID", "259636193"))
 
 # Флаг для временного отключения валидации (для отладки)
 SKIP_VALIDATION = os.getenv("SKIP_VALIDATION", "true").lower() == "true"
+
+# Путь к сертификату Минцифры (лежит в корне репозитория рядом с main.py)
+CA_CERT_PATH = "russian_trusted_root_ca_pem.crt"
 # -------------------------------------------------------
 
 app = FastAPI()
@@ -26,6 +28,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 def verify_init_data(init_data: str, bot_token: str) -> bool:
     """
@@ -62,6 +65,7 @@ def verify_init_data(init_data: str, bot_token: str) -> bool:
         print(f"Ошибка валидации: {e}")
         return False
 
+
 def send_message_to_user(user_id: int, text: str):
     """Отправляет сообщение пользователю через API MAX."""
     url = f"https://platform-api2.max.ru/messages?user_id={user_id}"
@@ -74,12 +78,31 @@ def send_message_to_user(user_id: int, text: str):
         "format": "markdown"
     }
     try:
-        response = requests.post(url, headers=headers, json=payload)
+        # Проверяем, существует ли файл сертификата
+        if os.path.exists(CA_CERT_PATH):
+            print(f"=== Использую сертификат: {CA_CERT_PATH} ===")
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload,
+                verify=CA_CERT_PATH,
+                timeout=30
+            )
+        else:
+            print(f"=== ВНИМАНИЕ: файл {CA_CERT_PATH} не найден, отправляю без него ===")
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+
         print(f"=== ОТВЕТ ОТ MAX API === Статус: {response.status_code}, Тело: {response.text}")
         return response.json()
     except Exception as e:
         print(f"=== ОШИБКА ОТПРАВКИ В MAX === {e}")
         return {"ok": False, "error": str(e)}
+
 
 @app.post("/api/order")
 async def receive_order(request: Request):
@@ -102,7 +125,7 @@ async def receive_order(request: Request):
         else:
             print("ВНИМАНИЕ: Валидация отключена (SKIP_VALIDATION=true)")
 
-        # 2. Извлекаем user_id из данных
+        # 2. Извлекаем данные пользователя из initData
         user_name = 'Клиент'
         user_id = None
         if init_data:
@@ -133,6 +156,7 @@ async def receive_order(request: Request):
     except Exception as e:
         print(f"Ошибка при обработке заказа: {e}")
         raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
+
 
 @app.get("/")
 async def root():
