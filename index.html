@@ -277,7 +277,7 @@
                 this.value = this.value.replace(/[^\d\s\+\-\(\)]/g, '');
             });
 
-            // Закрытие модального окна — отправляем данные боту
+            // Закрытие модального окна — отправляем данные на сервер
             closeModalBtn.addEventListener('click', function() {
                 modalOverlay.classList.remove('active');
                 sendOrderToBot();
@@ -308,7 +308,7 @@
                 const quantity = document.getElementById('quantity').value || '1';
                 const comment = document.getElementById('comment').value.trim() || '—';
                 let phone = phoneInput.value.trim();
-                if (phoneWrapper.style.display === 'none') phone = ''; // если телефон скрыт, не учитываем
+                if (phoneWrapper.style.display === 'none') phone = '';
 
                 // Формируем текст заявки
                 let message = '🔔 Новая заявка на 3D-печать!\n\n';
@@ -334,14 +334,41 @@
                 modalOverlay.classList.add('active');
             });
 
-            function sendOrderToBot() {
+            // ===== ОТПРАВКА ДАННЫХ НА СЕРВЕР RENDER =====
+            async function sendOrderToBot() {
                 if (!pendingMessage) return;
 
-                if (window.WebApp && window.WebApp.sendData) {
-                    window.WebApp.sendData(pendingMessage);
-                } else {
-                    alert('Отправка данных боту (тестовый режим):\n\n' + pendingMessage);
+                // ⚠️ Адрес вашего сервера на Render
+                const serverUrl = 'https://max-bot-server.onrender.com/api/order';
+
+                const dataToSend = {
+                    initData: window.WebApp ? window.WebApp.initData : '',
+                    message: pendingMessage
+                };
+
+                console.log('Отправка на сервер:', dataToSend);
+
+                try {
+                    const response = await fetch(serverUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(dataToSend)
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ Заявка успешно отправлена на сервер!');
+                    } else {
+                        const errorText = await response.text();
+                        console.error('❌ Ошибка сервера:', response.status, errorText);
+                        alert('Не удалось отправить заявку. Попробуйте ещё раз.');
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка сети:', error);
+                    alert('Ошибка соединения с сервером. Проверьте интернет.');
                 }
+
                 pendingMessage = '';
             }
         });
