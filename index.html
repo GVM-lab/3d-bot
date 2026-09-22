@@ -33,7 +33,7 @@
             margin-bottom: 6px;
             margin-top: 16px;
         }
-        input[type="file"], select, input[type="number"], input[type="text"], input[type="tel"] {
+        select, input[type="number"], input[type="text"], input[type="tel"], textarea {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -41,11 +41,11 @@
             font-size: 16px;
             box-sizing: border-box;
             background-color: #fafafa;
+            font-family: inherit;
         }
-        input[type="file"] {
-            padding: 8px;
-            background-color: white;
-            font-size: 14px;
+        textarea {
+            resize: vertical;
+            min-height: 100px;
         }
         button {
             width: 100%;
@@ -62,15 +62,14 @@
         button:active {
             background-color: #005bb5;
         }
-        #customColorWrapper {
-            display: none;
-            margin-top: 8px;
-        }
         .hint {
             color: #888;
             font-size: 12px;
             display: block;
             margin-top: 4px;
+        }
+        .required-mark {
+            color: #e53935;
         }
         .modal-overlay {
             display: none;
@@ -150,14 +149,6 @@
         <p id="greeting" style="text-align:center; color:#666; font-size:14px;"></p>
 
         <form id="orderForm">
-            <label for="modelFile">Файл 3D-модели (.stl, .obj)</label>
-            <input type="file" id="modelFile" accept=".stl,.obj,.3mf">
-            <small class="hint">Необязательно. Можно прикрепить позже.</small>
-
-            <label for="photoFiles">Фотографии</label>
-            <input type="file" id="photoFiles" accept="image/*" multiple>
-            <small class="hint">Необязательно. Можно выбрать несколько фото.</small>
-
             <label for="material">Материал</label>
             <select id="material">
                 <option value="PLA">PLA (жесткий, экологичный)</option>
@@ -166,28 +157,14 @@
                 <option value="Любой">Любой (на ваше усмотрение)</option>
             </select>
 
-            <label for="color">Цвет</label>
-            <select id="color">
-                <option value="Черный">Черный</option>
-                <option value="Белый">Белый</option>
-                <option value="Серый">Серый</option>
-                <option value="Красный">Красный</option>
-                <option value="Синий">Синий</option>
-                <option value="Зеленый">Зеленый</option>
-                <option value="custom">— Свой цвет —</option>
-            </select>
-            <div id="customColorWrapper">
-                <input type="text" id="customColor" placeholder="Напишите название или оттенок">
-            </div>
-
             <label for="quantity">Количество (шт.)</label>
             <input type="number" id="quantity" value="1" min="1" max="100">
 
-            <label for="comment">Комментарий</label>
-            <input type="text" id="comment" placeholder="Например: нужна поддержка">
+            <label for="task">Задание <span class="required-mark">*</span></label>
+            <textarea id="task" required placeholder="Опишите, что нужно сделать"></textarea>
 
             <!-- ОБЯЗАТЕЛЬНОЕ ПОЛЕ: способ связи -->
-            <label for="contactMethod">Удобный способ связи *</label>
+            <label for="contactMethod">Удобный способ связи <span class="required-mark">*</span></label>
             <select id="contactMethod" required>
                 <option value="">— Выберите способ —</option>
                 <option value="Телефонный звонок">Телефонный звонок</option>
@@ -197,9 +174,9 @@
             </select>
 
             <div id="phoneWrapper" style="display:none;">
-                <label for="phone">Номер телефона</label>
-                <input type="tel" id="phone" placeholder="+7 (999) 123-45-67">
-                <small class="hint">Необязательно. Но так мы сможем быстрее связаться.</small>
+                <label for="phone">Номер телефона <span class="required-mark">*</span></label>
+                <input type="tel" id="phone" placeholder="+7 (999) 123-45-67" required>
+                <small class="hint">Обязательно для любого способа связи.</small>
             </div>
 
             <button type="submit">Отправить заказ</button>
@@ -214,7 +191,6 @@
                 Исполнитель работ свяжется с вами в ближайшее время.
             </div>
             <div class="modal-row"><span>Материал</span><span id="mMaterial">—</span></div>
-            <div class="modal-row"><span>Цвет</span><span id="mColor">—</span></div>
             <div class="modal-row"><span>Количество</span><span id="mQuantity">—</span></div>
             <div class="modal-row"><span>Связь</span><span id="mContact">—</span></div>
             <button type="button" id="closeModal">Понятно</button>
@@ -237,10 +213,6 @@
                     'Демонстрационный режим (вне MAX)';
             }
 
-            const colorSelect = document.getElementById('color');
-            const customColorWrapper = document.getElementById('customColorWrapper');
-            const customColorInput = document.getElementById('customColor');
-
             const contactMethod = document.getElementById('contactMethod');
             const phoneWrapper = document.getElementById('phoneWrapper');
             const phoneInput = document.getElementById('phone');
@@ -250,25 +222,15 @@
 
             let pendingMessage = '';
 
-            // Показ поля "Свой цвет"
-            colorSelect.addEventListener('change', function() {
-                if (this.value === 'custom') {
-                    customColorWrapper.style.display = 'block';
-                    customColorInput.focus();
-                } else {
-                    customColorWrapper.style.display = 'none';
-                    customColorInput.value = '';
-                }
-            });
-
-            // Показ поля телефона при выборе способа связи
+            // Показ поля телефона при выборе любого способа связи
             contactMethod.addEventListener('change', function() {
                 if (this.value === '') {
                     phoneWrapper.style.display = 'none';
-                } else if (this.value === 'Сообщение в MAX') {
-                    phoneWrapper.style.display = 'none';
+                    phoneInput.required = false;
                 } else {
                     phoneWrapper.style.display = 'block';
+                    phoneInput.required = true;
+                    phoneInput.focus();
                 }
             });
 
@@ -287,7 +249,7 @@
             document.getElementById('orderForm').addEventListener('submit', function(e) {
                 e.preventDefault();
 
-                // ЕДИНСТВЕННАЯ ПРОВЕРКА: выбран ли способ связи
+                // Проверка способа связи
                 const contact = contactMethod.value;
                 if (!contact) {
                     alert('Пожалуйста, выберите удобный способ связи.');
@@ -295,41 +257,32 @@
                     return;
                 }
 
-                // Сбор данных (все поля, кроме способа связи, могут быть пустыми)
-                const fileInput = document.getElementById('modelFile');
-                const fileName = fileInput.files[0] ? fileInput.files[0].name : 'не прикреплён';
-
-                let finalColor = colorSelect.value;
-                if (finalColor === 'custom') {
-                    finalColor = customColorInput.value.trim() || 'не указан';
+                // Проверка телефона (обязателен для всех способов)
+                const phone = phoneInput.value.trim();
+                if (!phone) {
+                    alert('Пожалуйста, укажите номер телефона — он нужен для любого способа связи.');
+                    phoneInput.focus();
+                    return;
                 }
 
                 const material = document.getElementById('material').value;
                 const quantity = document.getElementById('quantity').value || '1';
-                const comment = document.getElementById('comment').value.trim() || '—';
-                let phone = phoneInput.value.trim();
-                if (phoneWrapper.style.display === 'none') phone = '';
+                const task = document.getElementById('task').value.trim() || '—';
 
                 // Формируем текст заявки
                 let message = '🔔 Новая заявка на 3D-печать!\n\n';
                 message += '📦 Материал: ' + material + '\n';
-                message += '🎨 Цвет: ' + finalColor + '\n';
                 message += '🔢 Количество: ' + quantity + ' шт.\n';
                 message += '📞 Способ связи: ' + contact + '\n';
-                if (phone) {
-                    message += '☎️ Телефон: ' + phone + '\n';
-                }
-                message += '💬 Комментарий: ' + comment + '\n';
-                message += '📎 Файл модели: ' + fileName;
+                message += '☎️ Телефон: ' + phone + '\n';
+                message += '💬 Задание: ' + task;
 
                 pendingMessage = message;
 
                 // Заполняем всплывающее окно
                 document.getElementById('mMaterial').textContent = material;
-                document.getElementById('mColor').textContent = finalColor;
                 document.getElementById('mQuantity').textContent = quantity + ' шт.';
-                document.getElementById('mContact').textContent = 
-                    phone ? (contact + ' (' + phone + ')') : contact;
+                document.getElementById('mContact').textContent = contact + ' (' + phone + ')';
 
                 modalOverlay.classList.add('active');
             });
