@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # --- КОНФИГУРАЦИЯ (ЭТИ ДАННЫЕ НУЖНО БУДЕТ ЗАПОЛНИТЬ) ---
 BOT_TOKEN = os.getenv("MAX_BOT_TOKEN", "f9LHodD0cOIzL1jBoRh3RbmA5V7K44WWtL0lW2tb8hYwEBBwx2JBoaa-gQTd95qA3IFEzQVGZathDZGEqPVF")  # Токен вашего бота
-ADMIN_USER_ID = int(os.getenv("259636193", 0))          # Ваш user_id в MAX
+ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID", 259636193))          # Ваш user_id в MAX
 # -------------------------------------------------------
 
 app = FastAPI()
